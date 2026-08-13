@@ -156,7 +156,7 @@ jobs:
             echo "file=$NAME.tar.gz" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cli-${{ matrix.target }}
           path: ${{ steps.package.outputs.file }}
@@ -261,7 +261,7 @@ jobs:
           done
           test -n "$(ls -A "$OUT")" || { echo "::error::no bundles were produced"; exit 1; }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: installer-${{ matrix.target }}
           path: artifacts/*
@@ -297,7 +297,7 @@ jobs:
           cat SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-files
           path: release/*
