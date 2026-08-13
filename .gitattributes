@@ -1,0 +1,52 @@
+# Normalise line endings to LF everywhere — in the repository *and* in the
+# working tree, on every platform.
+#
+# Without this, Git on Windows defaults to core.autocrlf=true and checks files
+# out with CRLF. Two things in this repo break when that happens:
+#
+#   - The insta golden files in crates/filekind-core/tests/snapshots/ are
+#     byte-exact fixtures. The generator produces LF; a CRLF checkout makes
+#     every one of them mismatch, so `cargo test` fails on a Windows clone for
+#     reasons that have nothing to do with the code. (CI does not catch this:
+#     GitHub runners check out with autocrlf off.)
+#
+#   - scripts/*.sh and the generated install.sh / postinst run on Linux. A
+#     shebang line ending in CR fails with the famously unhelpful
+#     "bad interpreter: /bin/sh^M".
+#
+# Modern Windows editors all handle LF, so forcing it costs nothing.
+* text=auto eol=lf
+
+# Shell scripts and the templates that produce them: LF is not negotiable.
+*.sh        text eol=lf
+*.j2        text eol=lf
+*.ksy       text eol=lf
+*.filekind  text eol=lf
+
+# Byte-exact test fixtures. Normalised rather than marked binary on purpose:
+# `-text` would commit whatever the working tree holds, so one editor saving a
+# snapshot with CRLF would break the golden tests on Linux. Forcing LF makes
+# that impossible in either direction.
+*.snap      text eol=lf
+
+# Windows-native formats that genuinely want CRLF. A .reg file with LF endings
+# is accepted by reg.exe, but Notepad renders it as one long line, and these
+# are meant to be read before they are run.
+*.reg       text eol=crlf
+*.iss       text eol=crlf
+*.nsh       text eol=crlf
+
+# Binary
+*.png       binary
+*.ico       binary
+*.icns      binary
+*.pdf       binary
+*.zip       binary
+*.msi       binary
+*.dmg       binary
+
+# Keep generated output out of language stats and collapse it in diffs.
+crates/filekind-gui/src/lib/bindings/** linguist-generated=true
+crates/filekind-core/tests/snapshots/** linguist-generated=true
+crates/filekind-gui/package-lock.json   linguist-generated=true
+Cargo.lock                              linguist-generated=true
