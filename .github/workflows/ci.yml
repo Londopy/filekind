@@ -117,6 +117,13 @@ jobs:
         working-directory: crates/filekind-gui
         run: npm run check
 
+      # `tauri build` is a release build of three hundred crates, so a plain
+      # type error costs four minutes to discover at the very end. Check first:
+      # same compiler errors, no codegen, and the failure says which layer
+      # broke rather than "failed to build app".
+      - name: Type-check the Rust
+        run: cargo check -p filekind-gui --locked
+
       - name: Build the app
         working-directory: crates/filekind-gui
         run: npm run tauri build -- --no-bundle
