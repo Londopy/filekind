@@ -4,7 +4,7 @@
 [![Release](https://github.com/Londopy/filekind/actions/workflows/release.yml/badge.svg)](https://github.com/Londopy/filekind/actions/workflows/release.yml)
 [![changelog](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Londopy/filekind/gh-pages/changelog-badge.json)](CHANGELOG.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#licence)
-[![MSRV](https://img.shields.io/badge/rustc-1.77%2B-orange)](#development)
+[![MSRV](https://img.shields.io/badge/rustc-1.88%2B-orange)](#development)
 
 **Make a custom file extension a real, recognised file type — on Windows, Linux and macOS — from one spec file.**
 

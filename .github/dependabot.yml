@@ -32,3 +32,7 @@ updates:
       interval: monthly
     commit-message:
       prefix: "ci"
+    ignore:
+      # dtolnay/rust-toolchain is pinned to the MSRV, not tracking latest.
+      # Bumping it would silently delete the check it exists to perform.
+      - dependency-name: "dtolnay/rust-toolchain"

@@ -11,7 +11,7 @@ cd filekind
 cargo test --workspace --exclude filekind-gui --all-features
 ```
 
-That is the whole loop for the library and the CLI. Rust 1.77 or newer.
+That is the whole loop for the library and the CLI. Rust 1.88 or newer.
 
 The GUI needs more. It is a workspace member but **not** a default member, on
 purpose: a headless CI box should be able to run the full core test suite

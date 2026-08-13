@@ -46,10 +46,19 @@ The resolution order is now:
 The Inno and NSIS snippets never need this: an installer knows its own
 `{app}` / `$INSTDIR`.
 
-### MSRV is 1.77, not 1.75
+### MSRV is 1.88, not 1.75
 
-`toml_edit` and the `image`/`png` chain both need it. 1.75 is not reachable
-without pinning dependencies to versions old enough to have their own problems.
+The sheet asked for 1.75. That floor is not reachable: `image 0.25` declares
+`rust-version = 1.88`, and the `clap` chain is on edition 2024, which needs
+1.85. Getting to 1.75 would mean pinning most of the tree to versions old
+enough to have their own problems.
+
+Worth recording how this was found, because it is the failure mode an MSRV
+policy exists to catch: the number was written down as 1.77 without ever being
+tested, and the first CI run rejected it — `clap_lex 1.1.0` will not even parse
+its own manifest on Cargo 1.77. The CI job now pins `dtolnay/rust-toolchain` to
+1.88 and runs with `--locked`, and Dependabot is told not to "upgrade" that pin,
+since doing so would delete the check.
 
 ### `ArtifactBody` is a struct-variant enum
 

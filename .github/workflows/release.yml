@@ -225,7 +225,7 @@ jobs:
 
       - name: Stage the CLI as a bundled sidecar
         shell: bash
-        run: ./scripts/stage-cli-sidecar.sh ${{ matrix.target }}
+        run: bash scripts/stage-cli-sidecar.sh ${{ matrix.target }}
 
       - name: Build the bundle
         working-directory: crates/filekind-gui

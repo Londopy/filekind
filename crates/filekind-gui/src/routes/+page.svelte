@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
+  import type { UnlistenFn } from '@tauri-apps/api/event';
 
   import { api, asCommandError } from '$lib/api';
   import { debounce, humanBytes } from '$lib/debounce';
@@ -27,7 +28,7 @@
   let dirty = $state(false);
 
   let diagnostics = $state<Diagnostic[]>([]);
-  let derived = $state<Derived | null>(null);
+  let derivedInfo = $state<Derived | null>(null);
   let artifacts = $state<ArtifactView[]>([]);
   let previewError = $state<string | null>(null);
   let previewStale = $state(false);
@@ -71,7 +72,7 @@
       ]);
       artifacts = views;
       diagnostics = d;
-      derived = derivedValues;
+      derivedInfo = derivedValues;
       previewError = null;
     } catch (e) {
       const err = asCommandError(e);
@@ -131,7 +132,7 @@
     let target = specPath;
     if (!target) {
       const chosen = await save({
-        defaultPath: `${derived?.slug ?? 'format'}.filekind`,
+        defaultPath: `${derivedInfo?.slug ?? 'format'}.filekind`,
         filters: [{ name: 'filekind spec', extensions: ['filekind'] }]
       });
       if (typeof chosen !== 'string') return;
@@ -242,25 +243,32 @@
     return abs;
   }
 
-  onMount(async () => {
-    recents = await api.recentSpecs();
-    if (!recents.length) wizard = true;
+  // onMount must return its teardown synchronously, so the async setup runs in
+  // a nested promise and the listener is captured for the sync cleanup.
+  onMount(() => {
+    let unlisten: UnlistenFn | undefined;
 
-    // Drag-and-drop (v0.3): a .filekind opens it, a .png becomes the icon.
-    const unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
-      if (event.payload.type !== 'drop') return;
-      const dropped = event.payload.paths[0];
-      if (!dropped) return;
-      if (dropped.toLowerCase().endsWith('.png')) {
-        if (!spec) return;
-        spec.association.icon = relativeTo(options.baseDir, dropped);
-        await refreshIcon(dropped);
-        touched();
-      } else {
-        await openSpec(dropped);
-      }
-    });
-    return unlisten;
+    void (async () => {
+      recents = await api.recentSpecs();
+      if (!recents.length) wizard = true;
+
+      // Drag-and-drop (v0.3): a .filekind opens it, a .png becomes the icon.
+      unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
+        if (event.payload.type !== 'drop') return;
+        const dropped = event.payload.paths[0];
+        if (!dropped) return;
+        if (dropped.toLowerCase().endsWith('.png')) {
+          if (!spec) return;
+          spec.association.icon = relativeTo(options.baseDir, dropped);
+          await refreshIcon(dropped);
+          touched();
+        } else {
+          await openSpec(dropped);
+        }
+      });
+    })();
+
+    return () => unlisten?.();
   });
 </script>
 
@@ -384,7 +392,7 @@
                 Escaped bytes at offset 0. In the spec file this must be a TOML
                 <em>literal</em> string — single quotes — because <code>"\x01"</code> is not valid
                 TOML.
-                {#if derived?.magicHex}<br />Decodes to <code>{derived.magicHex}</code>.{/if}
+                {#if derivedInfo?.magicHex}<br />Decodes to <code>{derivedInfo.magicHex}</code>.{/if}
               </span>
             </label>
 
@@ -403,16 +411,16 @@
               </select>
             </label>
 
-            {#if derived}
+            {#if derivedInfo}
               <dl class="derived">
                 <dt>ProgID</dt>
-                <dd>{derived.progid}</dd>
+                <dd>{derivedInfo.progid}</dd>
                 <dt>UTI</dt>
-                <dd>{derived.uti}</dd>
+                <dd>{derivedInfo.uti}</dd>
                 <dt>Icon name</dt>
-                <dd>{derived.mimeIconName}</dd>
+                <dd>{derivedInfo.mimeIconName}</dd>
                 <dt>Desktop id</dt>
-                <dd>{derived.desktopId}</dd>
+                <dd>{derivedInfo.desktopId}</dd>
               </dl>
             {/if}
           {:else if screen === 'icon'}
@@ -440,7 +448,7 @@
                 }}
               />
               <span class="hint">
-                Declared here and only here. A <code>{derived?.dottedExtension ?? '.ext'}</code> file
+                Declared here and only here. A <code>{derivedInfo?.dottedExtension ?? '.ext'}</code> file
                 can never say what opens it — that is what makes a format a data file rather than a
                 malware delivery vehicle.
               </span>
@@ -664,8 +672,7 @@
     line-height: 1.45;
     color: var(--fg-dim);
   }
-  .hint code,
-  .fineprint code {
+  .hint code {
     font-family: var(--mono);
   }
   fieldset {

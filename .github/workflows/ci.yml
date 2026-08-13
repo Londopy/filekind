@@ -52,9 +52,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.77.0
+      # Pinned deliberately: this job exists to catch a dependency quietly
+      # raising the floor. Dependabot is told to leave it alone.
+      - uses: dtolnay/rust-toolchain@1.88.0
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --workspace --exclude filekind-gui
+      # --locked so the MSRV is checked against the versions we actually ship,
+      # not whatever a fresh resolve would pick.
+      - run: cargo check --workspace --exclude filekind-gui --locked
 
   bindings:
     name: TypeScript bindings are up to date
@@ -67,7 +71,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       # The TS types are generated from the Rust definitions. If someone
       # edits a struct without regenerating, this job notices.
-      - run: ./scripts/generate-bindings.sh
+      # Invoked through `bash` rather than executed directly: a checkout on a
+      # filesystem without a permission bit would otherwise fail with EACCES.
+      - run: bash scripts/generate-bindings.sh
       - run: git diff --exit-code crates/filekind-gui/src/lib/bindings
 
   gui:
@@ -105,7 +111,7 @@ jobs:
 
       - name: Stage the CLI sidecar the bundler expects
         shell: bash
-        run: ./scripts/stage-cli-sidecar.sh
+        run: bash scripts/stage-cli-sidecar.sh
 
       - name: Type-check the frontend
         working-directory: crates/filekind-gui

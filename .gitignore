@@ -22,7 +22,8 @@ crates/filekind-gui/build/
 .vite/
 *.tsbuildinfo
 
-# package-lock.json IS committed, for the same reason as Cargo.lock.
+# package-lock.json IS committed, for the same reason as Cargo.lock, and it
+# lets CI use `npm ci` instead of a fresh resolve on every run.
 
 # Tauri
 crates/filekind-gui/src-tauri/gen/
