@@ -44,7 +44,7 @@ jobs:
       # changelog section matches the tag being released.
       - name: Validate and check version sync
         id: patchnotes
-        uses: Londopy/patchnotes@v2
+        uses: Londopy/patchnotes@v2.6.0
         with:
           file: CHANGELOG.md
           strict: "true"
@@ -76,12 +76,14 @@ jobs:
             target: aarch64-unknown-linux-musl
             archive: tar.gz
             smoke: false
-          # macos-13 is the last Intel image. Building x86_64 on an arm64
-          # runner would work, but then the smoke test would need Rosetta.
-          - os: macos-13
+          # Cross-compiled from Apple silicon. The macos-13 Intel image was
+          # retired in December 2025, and macos-15-intel follows in 2027, so
+          # there is no lasting Intel runner to build this on. Nothing here can
+          # run it, hence no smoke test.
+          - os: macos-latest
             target: x86_64-apple-darwin
             archive: tar.gz
-            smoke: true
+            smoke: false
           - os: macos-latest
             target: aarch64-apple-darwin
             archive: tar.gz
@@ -181,20 +183,22 @@ jobs:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bundles: deb,rpm,appimage
+          # One universal binary rather than two builds: it covers both
+          # architectures, halves the macOS matrix, and does not depend on an
+          # Intel runner existing.
           - os: macos-latest
-            target: aarch64-apple-darwin
-            bundles: dmg
-          - os: macos-13
-            target: x86_64-apple-darwin
+            target: universal-apple-darwin
             bundles: dmg
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.changelog.outputs.tag }}
 
+      # A universal-apple-darwin build is a lipo of two real targets, so both
+      # have to be installed; `targets:` does not expand the alias.
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'x86_64-apple-darwin,aarch64-apple-darwin' || matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -253,7 +257,7 @@ jobs:
               deb)      new="filekind-${VERSION}-amd64.deb" ;;
               rpm)      new="filekind-${VERSION}-x86_64.rpm" ;;
               AppImage) new="filekind-${VERSION}-x86_64.AppImage" ;;
-              dmg)      new="filekind-${VERSION}-${{ matrix.target }}.dmg" ;;
+              dmg)      new="filekind-${VERSION}-universal.dmg" ;;
               *)        new="$base" ;;
             esac
             cp "$f" "$OUT/$new"
@@ -350,7 +354,7 @@ jobs:
             echo "| **Windows, CLI only** | \`filekind-cli-$TAG-x86_64-pc-windows-msvc.zip\` |"
             echo "| **Linux desktop app** | \`.deb\`, \`.rpm\` or \`.AppImage\` |"
             echo "| **Linux CLI** | \`filekind-cli-$TAG-*-linux-musl.tar.gz\` — statically linked, no runtime needed |"
-            echo "| **macOS desktop app** | \`.dmg\` (\`aarch64\` for Apple silicon, \`x86_64\` for Intel) |"
+            echo "| **macOS desktop app** | \`.dmg\` — universal, runs on Apple silicon and Intel |"
             echo "| **macOS CLI** | \`filekind-cli-$TAG-*-apple-darwin.tar.gz\` |"
             echo "| **From source** | \`cargo install filekind-cli\` |"
             echo

@@ -25,10 +25,26 @@ case "$TARGET" in
     *windows*) EXT=".exe" ;;
 esac
 
+mkdir -p "$DEST"
+
+# universal-apple-darwin is not a real target triple — it is a lipo of two.
+# Tauri still wants one file named after the alias, so build both and fuse
+# them, exactly as the bundler does for the app binary itself.
+if [ "$TARGET" = "universal-apple-darwin" ]; then
+    for arch in x86_64-apple-darwin aarch64-apple-darwin; do
+        printf 'Building filekind-cli for %s\n' "$arch"
+        cargo build --release --locked -p filekind-cli --target "$arch"
+    done
+    lipo -create -output "$DEST/filekind-universal-apple-darwin" \
+        target/x86_64-apple-darwin/release/filekind \
+        target/aarch64-apple-darwin/release/filekind
+    printf 'Staged %s (universal)\n' "$DEST/filekind-universal-apple-darwin"
+    exit 0
+fi
+
 printf 'Building filekind-cli for %s\n' "$TARGET"
 cargo build --release --locked -p filekind-cli --target "$TARGET"
 
-mkdir -p "$DEST"
 SRC="target/$TARGET/release/filekind$EXT"
 [ -f "$SRC" ] || { printf 'filekind: expected %s to exist\n' "$SRC" >&2; exit 1; }
 

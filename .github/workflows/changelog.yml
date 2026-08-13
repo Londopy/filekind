@@ -28,7 +28,11 @@ jobs:
       #
       # The badge is published only from main: fork PRs have no write token,
       # and a badge is not worth failing a contributor's first PR over.
-      - uses: Londopy/patchnotes@v2
+      # Pinned rather than floating on @v2: the v2 tag resolves to a release
+      # that predates the badge inputs, and the action only *warns* about
+      # inputs it does not recognise — so the badge silently never published
+      # and the README showed "resource not found" for days.
+      - uses: Londopy/patchnotes@v2.6.0
         id: changelog
         with:
           file: CHANGELOG.md
