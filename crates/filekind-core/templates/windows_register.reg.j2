@@ -1,0 +1,71 @@
+Windows Registry Editor Version 5.00
+
+{{ banner_semi }};
+; Scope: {{ hive }}
+{%- if is_system %}
+; Writing to HKLM affects every user and requires an elevated prompt.
+{%- else %}
+; Per-user: no elevation, and nothing you cannot undo yourself.
+{%- endif %}
+;
+; filekind emits this file rather than applying it. Read it first — that is
+; the entire point of shipping a .reg instead of a register.exe.
+
+; The extension itself
+[{{ hive }}\Software\Classes\{{ dotted_ext }}]
+@="{{ progid | reg }}"
+"Content Type"="{{ mime | reg }}"
+{%- if has_perceived_type %}
+"PerceivedType"="{{ perceived_type | reg }}"
+{%- endif %}
+
+; Listing the ProgID here is what puts the type in Explorer's "Open with"
+; menu. Note what is *not* here: an assignment making this the default
+; handler. Windows 10 and later deliberately make that impossible from a
+; script — only the user can pick a default, in Settings. Tools that work
+; around the restriction get flagged as malware. Register, then prompt.
+[{{ hive }}\Software\Classes\{{ dotted_ext }}\OpenWithProgids]
+"{{ progid | reg }}"=""
+
+; The ProgID
+[{{ hive }}\Software\Classes\{{ progid }}]
+@="{{ description | reg }}"
+"FriendlyTypeName"="{{ name | reg }}"
+{%- if has_windows_default_icon %}
+
+[{{ hive }}\Software\Classes\{{ progid }}\DefaultIcon]
+@="{{ windows_default_icon | reg }}"
+{%- else %}
+
+; No DefaultIcon: [windows].icon_path is unset and there is no handler
+; executable to borrow an icon from. A loose .reg cannot know where your
+; installer will put icon.ico, and inventing a path would register an icon
+; that does not exist. Set [windows].icon_path, or use the Inno/NSIS snippet,
+; which does know its own install directory.
+{%- endif %}
+{%- if has_handler %}
+
+[{{ hive }}\Software\Classes\{{ progid }}\shell]
+@="open"
+
+[{{ hive }}\Software\Classes\{{ progid }}\shell\open\command]
+@="{{ windows_command | reg }}"
+{%- for verb in verbs %}
+
+[{{ hive }}\Software\Classes\{{ progid }}\shell\{{ verb.name }}\command]
+@="{{ verb.command | reg }}"
+{%- endfor %}
+{%- else %}
+
+; No shell\open\command: the spec declares no handler. The type will be
+; named and described in Explorer, and double-clicking it will offer the
+; "Open with" dialog.
+{%- endif %}
+
+; MIME cross-reference
+; Lets components that speak MIME rather than extensions find their way back.
+[{{ hive }}\Software\Classes\MIME\Database\Content Type\{{ mime }}]
+"Extension"="{{ dotted_ext | reg }}"
+
+; Explorer caches file-type information. If the change does not show up,
+; restart explorer.exe or sign out and back in.

@@ -1,0 +1,18 @@
+[Desktop Entry]
+{# Version here is the Desktop Entry Specification version, not the app's. #}Version=1.5
+Type=Application
+Name={{ name | dsk }}
+{%- if has_generic_name %}
+GenericName={{ generic_name | dsk }}
+{%- endif %}
+Comment={{ description | dsk }}
+{%- if has_handler %}
+Exec={{ desktop_exec }}
+{%- else %}
+{# A .desktop entry without Exec is invalid, so with no handler we point at xdg-open and let the desktop environment decide. #}Exec=xdg-open %f
+{%- endif %}
+Icon={{ mime_icon_name | dsk }}
+Terminal=false
+NoDisplay={{ no_display | lower }}
+MimeType={% for c in [mime] %}{{ c | dskl }};{% endfor %}
+Categories={% for c in categories %}{{ c | dskl }};{% endfor %}

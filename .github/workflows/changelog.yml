@@ -1,0 +1,72 @@
+name: Changelog
+
+# Runs on every pull request. The point is not bureaucracy: a changelog that
+# only gets written on release day gets written from `git log`, and a changelog
+# written from `git log` is a commit list, not release notes.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: write   # only used by the badge publish on main
+
+jobs:
+  validate:
+    name: Validate CHANGELOG.md
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Strict mode turns recoverable style problems into failures, and emits
+      # ::error annotations pinned to the exact line in the PR's diff.
+      #
+      # The badge is published only from main: fork PRs have no write token,
+      # and a badge is not worth failing a contributor's first PR over.
+      - uses: Londopy/patchnotes@v2
+        id: changelog
+        with:
+          file: CHANGELOG.md
+          strict: "true"
+          check-version: Cargo.toml
+          badge: ${{ github.event_name == 'push' && 'gh-pages' || 'none' }}
+          badge-label: changelog
+
+      - name: Summary
+        run: |
+          echo "Latest documented release: **${{ steps.changelog.outputs.latest-version }}**" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+  entry-present:
+    name: PR touches the changelog
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Advisory, not blocking. Plenty of legitimate PRs — a typo fix, a CI
+      # tweak — have nothing to say to users, and a bot that demands an entry
+      # for those just teaches people to write "misc changes".
+      - name: Look for a changelog edit
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          if git diff --name-only "$BASE"...HEAD | grep -qx "CHANGELOG.md"; then
+            echo "CHANGELOG.md was updated." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### No changelog entry"
+              echo
+              echo "This PR does not touch \`CHANGELOG.md\`. If it changes anything a user"
+              echo "would notice, add an entry under \`## [Unreleased]\`. If it does not"
+              echo "(docs, CI, refactors), ignore this — it is a note, not a gate."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=No changelog entry::Add one under [Unreleased] if this is user-visible."
+          fi

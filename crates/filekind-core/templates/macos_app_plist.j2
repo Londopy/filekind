@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+{{ banner_plain }}
+
+The Info.plist of a stub .app whose only job is to declare the type. It is
+not signed and not notarised, so Gatekeeper will not trust it and Launch
+Services may ignore it entirely. Useful for local testing; not shippable.
+-->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>{{ app_name | xml }}</string>
+  <key>CFBundleDisplayName</key>
+  <string>{{ app_name | xml }}</string>
+  <key>CFBundleIdentifier</key>
+  <string>{{ bundle_id | xml }}</string>
+  <key>CFBundleVersion</key>
+  <string>{{ format_version | xml }}</string>
+  <key>CFBundleShortVersionString</key>
+  <string>{{ format_version | xml }}</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleExecutable</key>
+  <string>{{ slug | xml }}</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+{%- if has_icon %}
+  <key>CFBundleIconFile</key>
+  <string>icon.icns</string>
+{%- endif %}
+  <key>LSMinimumSystemVersion</key>
+  <string>10.13</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>{{ uti | xml }}</string>
+      <key>UTTypeDescription</key>
+      <string>{{ description | xml }}</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+{%- for c in uti_conforms_to %}
+        <string>{{ c | xml }}</string>
+{%- endfor %}
+      </array>
+{%- if has_icon %}
+      <key>UTTypeIconFile</key>
+      <string>icon.icns</string>
+{%- endif %}
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>{{ extension | xml }}</string>
+        </array>
+        <key>public.mime-type</key>
+        <array>
+          <string>{{ mime | xml }}</string>
+        </array>
+      </dict>
+    </dict>
+  </array>
+
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>{{ name | xml }}</string>
+      <key>CFBundleTypeRole</key>
+      <string>{% if has_handler %}Editor{% else %}None{% endif %}</string>
+      <key>LSHandlerRank</key>
+      <string>Owner</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>{{ uti | xml }}</string>
+      </array>
+{%- if has_icon %}
+      <key>CFBundleTypeIconFile</key>
+      <string>icon.icns</string>
+{%- endif %}
+    </dict>
+  </array>
+</dict>
+</plist>

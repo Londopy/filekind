@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "filekind",
+  "version": "0.5.0",
+  "identifier": "wtf.londo.filekind",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "filekind",
+        "width": 1240,
+        "height": 820,
+        "minWidth": 940,
+        "minHeight": 620,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Make a custom file extension a real file type.",
+    "longDescription": "filekind compiles one declarative spec into the registry entries, MIME definitions, UTI declarations, icons and install scripts that Windows, Linux and macOS need before they will recognise a custom file extension.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ]
+      }
+    },
+    "externalBin": [
+      "binaries/filekind"
+    ],
+    "windows": {
+      "wix": {
+        "fragmentPaths": [
+          "wix/path.wxs"
+        ],
+        "componentRefs": [
+          "FilekindPathEntry"
+        ]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    }
+  }
+}

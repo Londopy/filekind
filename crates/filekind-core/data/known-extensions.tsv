@@ -1,0 +1,221 @@
+# Bundled collision dataset. Static on purpose: `filekind check` must give the
+# same answer offline, in CI, and in five years. Collisions are WARNINGS — the
+# filesystem has no registry and plenty of formats already share an extension.
+# ext	what already claims it
+3gp	3GPP multimedia
+7z	7-Zip archive
+aac	Advanced Audio Coding
+accdb	Microsoft Access database
+ai	Adobe Illustrator artwork
+aiff	Audio Interchange File Format
+apk	Android package
+apng	Animated PNG
+arw	Sony raw photo
+asc	ASCII armored PGP data
+asm	Assembly source
+asp	Active Server Pages
+aspx	ASP.NET page
+avi	Audio Video Interleave
+avif	AV1 Image File Format
+bak	Generic backup file
+bmp	Windows bitmap
+bson	Binary JSON
+bz2	bzip2 archive
+c	C source
+cab	Microsoft cabinet archive
+cbr	Comic book RAR archive
+cbz	Comic book ZIP archive
+cer	Security certificate
+cfg	Generic configuration file
+class	Java bytecode
+conf	Generic configuration file
+cpp	C++ source
+cr2	Canon raw photo
+crt	Security certificate
+cs	C# source
+csr	Certificate signing request
+css	Cascading style sheet
+csv	Comma-separated values
+cue	Cue sheet
+dat	Generic data file
+db	Generic database
+dcm	DICOM medical image
+deb	Debian package
+dds	DirectDraw surface texture
+dmg	Apple disk image
+dng	Digital Negative raw photo
+doc	Microsoft Word 97-2003
+docx	Microsoft Word document
+dot	Graphviz DOT graph
+dts	DTS audio
+dwg	AutoCAD drawing
+dxf	Drawing Exchange Format
+elf	Executable and Linkable Format
+eml	Email message
+env	Environment variable file
+eot	Embedded OpenType font
+epub	EPUB ebook
+exr	OpenEXR image
+f4v	Flash MP4 video
+fbx	Autodesk FBX 3D model
+flac	Free Lossless Audio Codec
+flv	Flash video
+gcode	G-code toolpath
+gif	Graphics Interchange Format
+git	Git metadata
+glb	glTF binary 3D model
+gltf	glTF 3D model
+go	Go source
+gpx	GPS Exchange Format
+gz	gzip archive
+h	C header
+h5	HDF5 dataset
+heic	High Efficiency Image Container
+hpp	C++ header
+htm	HTML document
+html	HTML document
+icns	Apple icon image
+ico	Windows icon
+ics	iCalendar
+idx	Generic index file
+iff	Interchange File Format
+ifc	Industry Foundation Classes BIM model
+img	Disk image
+indd	Adobe InDesign document
+ini	Windows initialisation file
+ipa	iOS application archive
+iso	ISO 9660 disc image
+java	Java source
+jpeg	JPEG image
+jpg	JPEG image
+json	JavaScript Object Notation
+jsonl	JSON Lines
+key	Apple Keynote presentation
+kml	Keyhole Markup Language
+kra	Krita document
+ksy	Kaitai Struct schema
+last	Generic marker file
+latex	LaTeX document
+lck	Lock file
+ldb	LevelDB table
+lha	LHA archive
+lock	Lock file
+log	Generic log file
+lrc	Lyrics file
+lz4	LZ4 compressed data
+lzma	LZMA compressed data
+m3u	Media playlist
+m4a	MPEG-4 audio
+m4v	MPEG-4 video
+map	Source map
+markdown	Markdown document
+md	Markdown document
+mdb	Microsoft Access database
+mid	MIDI sequence
+midi	MIDI sequence
+mkv	Matroska video
+mobi	Mobipocket ebook
+mov	QuickTime movie
+mp3	MPEG audio layer III
+mp4	MPEG-4 video
+mpg	MPEG video
+msg	Outlook message
+nef	Nikon raw photo
+nfo	Info text file
+nupkg	NuGet package
+obj	Wavefront 3D model
+odf	OpenDocument formula
+odg	OpenDocument drawing
+odp	OpenDocument presentation
+ods	OpenDocument spreadsheet
+odt	OpenDocument text
+ogg	Ogg container
+ogv	Ogg video
+onnx	ONNX machine learning model
+opus	Opus audio
+orf	Olympus raw photo
+otf	OpenType font
+out	Generic build output
+pages	Apple Pages document
+parquet	Apache Parquet columnar data
+pcap	Packet capture
+pdb	Program database / Protein Data Bank
+pdf	Portable Document Format
+pem	PEM encoded key or certificate
+pgn	Portable Game Notation
+plist	Apple property list
+png	Portable Network Graphics
+pot	gettext template
+ppt	Microsoft PowerPoint 97-2003
+pptx	Microsoft PowerPoint presentation
+proto	Protocol Buffers schema
+ps	PostScript
+psd	Adobe Photoshop document
+pth	PyTorch checkpoint
+pub	Public key / Microsoft Publisher
+qcow2	QEMU disk image
+r	R source
+raf	Fuji raw photo
+rar	RAR archive
+raw	Generic raw photo
+rda	R data
+rpm	RPM package
+rs	Rust source
+rst	reStructuredText
+rtf	Rich Text Format
+safetensors	Safetensors model weights
+sav	Save game / SPSS data
+sbom	Software bill of materials
+scad	OpenSCAD model
+sdf	Structure Data File
+sh3d	Sweet Home 3D plan
+sig	Detached signature
+sketch	Sketch design document
+sldprt	SolidWorks part
+sql	SQL script
+sqlite	SQLite database
+sqlite3	SQLite database
+srt	SubRip subtitles
+ssa	SubStation Alpha subtitles
+stl	Stereolithography 3D model
+step	STEP CAD model
+svg	Scalable Vector Graphics
+swf	Shockwave Flash
+tar	tar archive
+tex	TeX document
+tga	Truevision TGA image
+tgz	gzipped tar archive
+tif	Tagged Image File Format
+tiff	Tagged Image File Format
+tmp	Temporary file
+toml	Tom's Obvious Minimal Language
+torrent	BitTorrent metainfo
+ts	TypeScript source / MPEG transport stream
+ttf	TrueType font
+txt	Plain text
+usdz	Universal Scene Description archive
+vcf	vCard contact
+vdi	VirtualBox disk image
+vhd	Virtual hard disk
+vmdk	VMware disk image
+vtt	WebVTT subtitles
+wad	Doom WAD archive
+war	Java web archive
+wasm	WebAssembly module
+wav	Waveform audio
+webm	WebM video
+webp	WebP image
+whl	Python wheel
+wma	Windows Media Audio
+wmv	Windows Media Video
+woff	Web Open Font Format
+woff2	Web Open Font Format 2
+xcf	GIMP image
+xls	Microsoft Excel 97-2003
+xlsx	Microsoft Excel workbook
+xml	Extensible Markup Language
+xz	xz archive
+yaml	YAML Ain't Markup Language
+yml	YAML Ain't Markup Language
+zip	ZIP archive
+zst	Zstandard archive

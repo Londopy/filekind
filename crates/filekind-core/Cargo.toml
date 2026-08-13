@@ -1,0 +1,46 @@
+[package]
+name = "filekind-core"
+description = "Compile one declarative spec into OS file-type registration artifacts for Windows, Linux and macOS."
+keywords = ["file-association", "mime", "registry", "uti", "codegen"]
+categories = ["development-tools", "filesystem"]
+readme = "../../README.md"
+documentation = "https://docs.rs/filekind-core"
+homepage = "https://github.com/Londopy/filekind"
+# Templates and datasets are include!d at compile time, so they must ship.
+# The golden snapshots must not: they are 53 files of test fixture.
+include = ["src/**/*", "templates/**/*", "data/**/*", "Cargo.toml"]
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+default = []
+# v0.5: parse .ksy schemas and plan kaitai-struct-compiler invocations.
+# Still pure: the plan is data, the CLI decides whether to execute it.
+kaitai = []
+# Emits TypeScript definitions for every type that crosses the Tauri IPC
+# boundary. §2: do not maintain parallel TS structs — generate them.
+#     cargo test -p filekind-core --features typescript
+typescript = ["dep:ts-rs"]
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }
+toml_edit = { workspace = true }
+minijinja = { workspace = true }
+thiserror = { workspace = true }
+image = { workspace = true }
+ico = { workspace = true }
+icns = { workspace = true }
+base64 = { workspace = true }
+ts-rs = { workspace = true, optional = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+serde_json = { workspace = true }
+# The golden tests build a synthetic PNG rather than committing a binary
+# fixture, so the icon-bearing artifacts appear in the snapshots.
+image = { workspace = true }

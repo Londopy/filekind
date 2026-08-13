@@ -1,0 +1,33 @@
+{{ banner_hash }}#
+# libmagic pattern for {{ name }}. This is what makes `file` and anything
+# built on it — Nautilus, Dolphin, `xdg-mime query filetype` — recognise the
+# format by content rather than by extension.
+#
+# Try it without installing:
+#     file --magic-file magic.txt yourfile{{ dotted_ext }}
+#
+# Install for your user:
+#     cat magic.txt >> ~/.magic && file --compile ~/.magic
+#
+{% if has_magic -%}
+# Signature: {{ magic_hex }}  ({{ magic_ascii }})
+0	string	{{ magic_libmagic }}	{{ description }}
+!:mime	{{ mime }}
+!:ext	{{ extension }}
+{%- else -%}
+# The spec declares no magic bytes, so there is nothing to match on at
+# offset 0. All that is left is the extension, which `file` will not use.
+{% if container == "zip" -%}
+# The container is zip, so files start with PK\003\004 and `file` will
+# report application/zip. Distinguishing a {{ dotted_ext }} from any other
+# zip needs a look inside the archive — that is a job for a real parser
+# (see the [schema] table and Kaitai Struct), not for a magic pattern.
+{% elif container == "sqlite" -%}
+# The container is sqlite, so `file` will report the generic
+# "SQLite 3.x database" and stop there. Use `PRAGMA application_id` inside
+# the database to mark it as yours.
+{% else -%}
+# Add a 4-8 byte signature to [format].magic and regenerate to get a
+# content-based match.
+{%- endif %}
+{%- endif %}

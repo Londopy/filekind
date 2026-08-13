@@ -1,0 +1,15 @@
+---
+source: crates/filekind-core/tests/golden.rs
+expression: text
+---
+[Desktop Entry]
+Version=1.5
+Type=Application
+Name=Studio Project
+Comment=Studio project bundle
+Exec=xdg-open %f
+Icon=application-vnd.example.studioproj
+Terminal=false
+NoDisplay=false
+MimeType=application/vnd.example.studioproj;
+Categories=Utility;

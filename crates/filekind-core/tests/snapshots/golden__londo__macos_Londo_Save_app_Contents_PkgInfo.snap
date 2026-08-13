@@ -1,0 +1,5 @@
+---
+source: crates/filekind-core/tests/golden.rs
+expression: text
+---
+APPL????

@@ -1,0 +1,10 @@
+#!/bin/sh
+{{ banner_hash }}#
+# The stub bundle's executable. macOS requires CFBundleExecutable to exist and
+# be runnable; this is the smallest thing that satisfies it.
+{% if has_handler -%}
+exec {{ handler | sh }} "$@"
+{%- else -%}
+printf '%s: this bundle only declares the {{ dotted_ext }} type; it has no handler.\n' "$0" >&2
+exit 0
+{%- endif %}

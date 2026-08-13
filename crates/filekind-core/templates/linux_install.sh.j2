@@ -1,0 +1,74 @@
+#!/bin/sh
+{{ banner_hash }}#
+# Installs the {{ dotted_ext }} file type for {% if is_system %}every user on this machine.
+# Run with sudo.{% else %}the current user.
+# No root required, and nothing outside $HOME is touched.{% endif %}
+#
+# filekind is a compiler, not an installer: this script is emitted so you can
+# read it before it runs. It does not write to the MIME database directly —
+# it calls the same xdg-* tools a package would.
+
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$here"
+
+MODE={{ xdg_mode }}
+DATA_DIR="{{ data_dir_expr }}"
+MIME="{{ mime }}"
+ICON_NAME="{{ mime_icon_name }}"
+DESKTOP_FILE="{{ desktop_file }}"
+MIME_FILE="{{ mime_file }}"
+
+require() {
+    command -v "$1" >/dev/null 2>&1 || {
+        printf 'filekind: required command not found: %s\n' "$1" >&2
+        printf '          install the xdg-utils package and try again\n' >&2
+        exit 1
+    }
+}
+require xdg-mime
+
+{% if is_system -%}
+if [ "$(id -u)" -ne 0 ]; then
+    printf 'filekind: --system install needs root; re-run with sudo\n' >&2
+    exit 1
+fi
+{% endif -%}
+
+printf 'Installing MIME type %s\n' "$MIME"
+xdg-mime install --mode "$MODE" --novendor "$MIME_FILE"
+
+if command -v xdg-icon-resource >/dev/null 2>&1; then
+    for size in {% for s in hicolor_sizes %}{{ s }} {% endfor %}; do
+        icon="icons/hicolor/${size}x${size}/mimetypes/${ICON_NAME}.png"
+        [ -f "$icon" ] || continue
+        xdg-icon-resource install --context mimetypes --mode "$MODE" \
+            --size "$size" "$icon" "$ICON_NAME"
+    done
+else
+    printf 'filekind: xdg-icon-resource not found, skipping icons\n' >&2
+fi
+
+printf 'Installing desktop entry %s\n' "$DESKTOP_FILE"
+mkdir -p "$DATA_DIR/applications"
+cp -f "$DESKTOP_FILE" "$DATA_DIR/applications/$DESKTOP_FILE"
+chmod 644 "$DATA_DIR/applications/$DESKTOP_FILE"
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$DATA_DIR/applications" || true
+fi
+if command -v update-mime-database >/dev/null 2>&1; then
+    update-mime-database "$DATA_DIR/mime" || true
+fi
+
+{% if has_handler -%}
+# Make this the default application for the type. On Linux, unlike Windows,
+# a program is allowed to ask for this — but it is still the user's choice,
+# so it is one clearly-labelled line you can delete.
+xdg-mime default "$DESKTOP_FILE" "$MIME"
+{% endif -%}
+
+printf '\nDone. %s is now registered as %s.\n' "{{ dotted_ext }}" "$MIME"
+printf 'Icon caches are lazy; log out and back in if the icon looks stale.\n'
+printf 'To undo: ./uninstall.sh\n'

@@ -1,0 +1,148 @@
+# {{ name }} — installing the `{{ dotted_ext }}` file type
+
+{{ banner_plain }}
+
+| | |
+|---|---|
+| Extension | `{{ dotted_ext }}` |
+| MIME type | `{{ mime }}` |
+| Container | `{{ container }}` |
+{%- if has_magic %}
+| Magic | `{{ magic_hex }}` (`{{ magic_ascii }}`) at offset 0 |
+{%- endif %}
+{%- if has_handler %}
+| Handler | `{{ handler }}` |
+{%- endif %}
+| Scope | {% if is_system %}system-wide (requires root/elevation){% else %}current user only{% endif %} |
+| Targets | {{ targets | join(", ") }} |
+
+Nothing in this directory has been installed. filekind is a compiler: it emits
+artifacts, and you decide whether to run them. Every install step below has a
+matching uninstall step.
+
+{% if "windows" in targets %}
+## Windows
+
+```
+windows/
+├── register.reg        double-click, or: reg import register.reg
+├── unregister.reg      the undo
+├── inno-snippet.iss    paste into an Inno Setup script
+├── nsis-snippet.nsh    !include from an NSIS script
+{%- if has_icon %}
+└── icon.ico            16/32/48/64/128/256, multi-resolution
+{%- endif %}
+```
+
+1. Read `register.reg`. It writes to `{{ hive }}`{% if not is_system %} only — no elevation, nothing outside your own profile{% endif %}.
+2. Run it: double-click, or `reg import windows\register.reg`.
+3. Restart `explorer.exe` if the new icon or type name does not appear.
+
+**About defaults.** `register.reg` makes `{{ dotted_ext }}` appear in Explorer's
+*Open with* list and gives it a name, a description{% if has_windows_default_icon %} and an icon{% endif %}.
+It does **not** make {% if has_handler %}`{{ handler }}`{% else %}anything{% endif %} the
+default handler, because Windows 10 and later do not allow that from a script.
+The user picks a default in *Settings → Apps → Default apps*. Tools that work
+around this get flagged as malware; filekind will not ship a friendlier version
+of that.
+{%- if not has_windows_default_icon %}
+
+**About the icon.** No `DefaultIcon` was written: `[windows].icon_path` is unset
+and there is no handler executable to borrow an icon from. A loose `.reg` cannot
+know where your installer will put `icon.ico`. Either set `[windows].icon_path`
+in the spec and regenerate, or use the Inno/NSIS snippet, which knows its own
+install directory.
+{%- endif %}
+
+To undo: run `windows\unregister.reg`.
+{% endif %}
+{% if "linux" in targets %}
+## Linux
+
+```
+linux/
+├── {{ mime_file }}
+├── {{ desktop_file }}
+├── install.sh
+├── uninstall.sh
+{%- if has_icon %}
+└── icons/hicolor/…/mimetypes/{{ mime_icon_name }}.png
+{%- endif %}
+```
+
+```sh
+cd linux
+{% if is_system %}sudo {% endif %}./install.sh
+```
+
+The script calls `xdg-mime` and `xdg-icon-resource` — the same tools a `.deb`
+would — and writes to `{{ data_dir_expr }}`. It never edits the MIME database
+directly. Read it first; it is about forty lines.
+
+Requires `xdg-utils`. Debian/Ubuntu: `apt install xdg-utils`.
+Fedora: `dnf install xdg-utils`.
+
+Check it worked:
+
+```sh
+xdg-mime query filetype yourfile{{ dotted_ext }}     # → {{ mime }}
+{%- if has_handler %}
+xdg-mime query default {{ mime }}     # → {{ desktop_file }}
+{%- endif %}
+```
+
+To undo: `{% if is_system %}sudo {% endif %}./uninstall.sh`
+{% endif %}
+{% if "macos" in targets %}
+## macOS — experimental
+
+```
+macos/
+├── Info.plist.fragment
+{%- if has_icon %}
+├── icon.icns
+{%- endif %}
+└── {{ app_name }}.app/        (only with --stub-app)
+```
+
+Read this part before spending an afternoon on it. A UTI declaration is only
+honoured inside a real `.app` bundle's `Info.plist`; a loose plist does
+nothing. Launch Services additionally ignores bundles that are not codesigned
+and notarised, which requires an Apple Developer account (~$99/yr).
+
+So the realistic use of `Info.plist.fragment` is to paste its two arrays into
+the `Info.plist` of an app you already sign and ship. The `--stub-app` bundle
+is for local experimentation only.
+
+After installing a bundle, force a re-scan:
+
+```sh
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+    -f /Applications/{{ app_name }}.app
+```
+{% endif %}
+## Content detection (`file`)
+
+`magic.txt` is a libmagic pattern.
+
+```sh
+file --magic-file magic.txt yourfile{{ dotted_ext }}
+cat magic.txt >> ~/.magic && file --compile ~/.magic   # install for your user
+```
+{% if not has_magic %}
+The spec declares no magic bytes, so the pattern is a comment explaining why.
+Add `magic = "…"` to `[format]` and regenerate.
+{% endif %}
+{%- if icon_warnings %}
+## Icon warnings
+
+The icon pipeline had something to say about the source image:
+
+{% for w in icon_warnings %}- {{ w }}
+{% endfor %}
+{%- endif %}
+
+---
+
+Regenerate everything here with `filekind build`. Edit the spec, not these
+files.

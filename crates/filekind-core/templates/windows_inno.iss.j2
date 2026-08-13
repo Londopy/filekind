@@ -1,0 +1,35 @@
+{{ banner_semi }};
+; Paste into your Inno Setup script. Unlike the loose .reg, an installer knows
+; its own install directory, so the icon path here is real.
+;
+; Ship icon.ico alongside your executable:
+;
+;   [Files]
+;   Source: "windows\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
+
+[Registry]
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ dotted_ext }}"; ValueType: string; ValueName: ""; ValueData: "{{ progid | inno }}"; Flags: uninsdeletevalue
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ dotted_ext }}"; ValueType: string; ValueName: "Content Type"; ValueData: "{{ mime | inno }}"; Flags: uninsdeletevalue
+{%- if has_perceived_type %}
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ dotted_ext }}"; ValueType: string; ValueName: "PerceivedType"; ValueData: "{{ perceived_type | inno }}"; Flags: uninsdeletevalue
+{%- endif %}
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ dotted_ext }}\OpenWithProgids"; ValueType: string; ValueName: "{{ progid | inno }}"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ progid | inno }}"; ValueType: string; ValueName: ""; ValueData: "{{ description | inno }}"; Flags: uninsdeletekey
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ progid | inno }}"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "{{ name | inno }}"; Flags: uninsdeletekey
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ progid | inno }}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\icon.ico,0"; Flags: uninsdeletekey
+{%- if has_handler %}
+Root: {{ hive_short }}; Subkey: "Software\Classes\{{ progid | inno }}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{{ handler | inno }}"" ""%1"""; Flags: uninsdeletekey
+{%- endif %}
+Root: {{ hive_short }}; Subkey: "Software\Classes\MIME\Database\Content Type\{{ mime | inno }}"; ValueType: string; ValueName: "Extension"; ValueData: "{{ dotted_ext | inno }}"; Flags: uninsdeletekey
+
+[Code]
+// Tell the shell the association changed, so Explorer picks up the new icon
+// without a sign-out. SHCNE_ASSOCCHANGED = $08000000, SHCNF_IDLIST = 0.
+procedure SHChangeNotify(wEventId: Integer; uFlags: Cardinal; dwItem1, dwItem2: Cardinal);
+  external 'SHChangeNotify@shell32.dll stdcall';
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    SHChangeNotify($08000000, 0, 0, 0);
+end;

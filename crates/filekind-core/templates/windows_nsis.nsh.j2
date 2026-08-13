@@ -1,0 +1,47 @@
+{{ banner_semi }};
+; !include this from your NSIS script, then call the macros:
+;
+;   !insertmacro FilekindRegister
+;   ...
+;   Section "Uninstall"
+;     !insertmacro FilekindUnregister
+;   SectionEnd
+
+!ifndef FILEKIND_{{ extension | upper }}_NSH
+!define FILEKIND_{{ extension | upper }}_NSH
+
+!define FK_ROOT {{ hive_short }}
+!define FK_EXT "{{ dotted_ext | nsis }}"
+!define FK_PROGID "{{ progid | nsis }}"
+!define FK_MIME "{{ mime | nsis }}"
+
+!macro FilekindRegister
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_EXT}" "" "${FK_PROGID}"
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_EXT}" "Content Type" "${FK_MIME}"
+{%- if has_perceived_type %}
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_EXT}" "PerceivedType" "{{ perceived_type | nsis }}"
+{%- endif %}
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_EXT}\OpenWithProgids" "${FK_PROGID}" ""
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_PROGID}" "" "{{ description | nsis }}"
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_PROGID}" "FriendlyTypeName" "{{ name | nsis }}"
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_PROGID}\DefaultIcon" "" "$INSTDIR\icon.ico,0"
+{%- if has_handler %}
+  WriteRegStr ${FK_ROOT} "Software\Classes\${FK_PROGID}\shell\open\command" "" '"$INSTDIR\{{ handler | nsis }}" "%1"'
+{%- endif %}
+  WriteRegStr ${FK_ROOT} "Software\Classes\MIME\Database\Content Type\${FK_MIME}" "Extension" "${FK_EXT}"
+  ; SHCNE_ASSOCCHANGED so Explorer refreshes without a sign-out.
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
+!macroend
+
+!macro FilekindUnregister
+  DeleteRegValue ${FK_ROOT} "Software\Classes\${FK_EXT}\OpenWithProgids" "${FK_PROGID}"
+  DeleteRegValue ${FK_ROOT} "Software\Classes\${FK_EXT}" ""
+  DeleteRegValue ${FK_ROOT} "Software\Classes\${FK_EXT}" "Content Type"
+  DeleteRegKey /ifempty ${FK_ROOT} "Software\Classes\${FK_EXT}\OpenWithProgids"
+  DeleteRegKey /ifempty ${FK_ROOT} "Software\Classes\${FK_EXT}"
+  DeleteRegKey ${FK_ROOT} "Software\Classes\${FK_PROGID}"
+  DeleteRegKey ${FK_ROOT} "Software\Classes\MIME\Database\Content Type\${FK_MIME}"
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
+!macroend
+
+!endif

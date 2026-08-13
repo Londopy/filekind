@@ -1,0 +1,19 @@
+---
+source: crates/filekind-core/tests/golden.rs
+expression: manifest
+---
+windows    reg            windows/register.reg
+windows    reg-uninstall  windows/unregister.reg
+windows    inno           windows/inno-snippet.iss
+windows    nsis           windows/nsis-snippet.nsh
+linux      mime-xml       linux/studio-project-mime.xml
+linux      desktop        linux/studio-project.desktop
+linux      script         linux/install.sh  [+x]
+linux      script         linux/uninstall.sh  [+x]
+linux      deb            linux/packaging/build-deb.sh  [+x]
+linux      deb            linux/packaging/deb/control
+linux      deb            linux/packaging/deb/postinst  [+x]
+linux      deb            linux/packaging/deb/postrm  [+x]
+linux      rpm            linux/packaging/studio-project-mime.spec
+universal  magic          magic.txt
+universal  readme         README.md

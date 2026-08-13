@@ -1,0 +1,30 @@
+Windows Registry Editor Version 5.00
+
+{{ banner_semi }};
+; Undoes windows/register.reg. Every register action filekind emits has a
+; matching unregister action. That is mandatory, not a nicety.
+;
+; This file is deliberately conservative. It removes what filekind added and
+; nothing else, because by the time you run it another application may also
+; have registered for {{ dotted_ext }}.
+
+; Remove our ProgID from the "Open with" list. The key itself stays: other
+; applications may have their own entries in it.
+[{{ hive }}\Software\Classes\{{ dotted_ext }}\OpenWithProgids]
+"{{ progid | reg }}"=-
+
+; Clear the values filekind set on the extension key. A .reg file cannot say
+; "only if it still points at us" — if you have since associated
+; {{ dotted_ext }} with something else, delete this block before running.
+[{{ hive }}\Software\Classes\{{ dotted_ext }}]
+@=-
+"Content Type"=-
+{%- if has_perceived_type %}
+"PerceivedType"=-
+{%- endif %}
+
+; The ProgID is ours alone, so it goes wholesale.
+[-{{ hive }}\Software\Classes\{{ progid }}]
+
+; And the MIME cross-reference.
+[-{{ hive }}\Software\Classes\MIME\Database\Content Type\{{ mime }}]

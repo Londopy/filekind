@@ -1,0 +1,403 @@
+name: Release
+
+# Tag-driven. `git tag v0.5.0 && git push --tags` is the whole release ritual;
+# everything below is derived from the tag and the changelog, so a release can
+# never disagree with its own notes.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build (e.g. v0.5.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Gate everything on the changelog first. Building three platforms' installers
+  # only to discover the release notes are malformed is a waste of ten minutes
+  # and produces a release nobody can read.
+  changelog:
+    name: Validate changelog
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.patchnotes.outputs.latest-version }}
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve the tag
+        id: tag
+        run: echo "tag=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      # Validates the file, then refuses to continue unless the newest
+      # changelog section matches the tag being released.
+      - name: Validate and check version sync
+        id: patchnotes
+        uses: Londopy/patchnotes@v2
+        with:
+          file: CHANGELOG.md
+          strict: "true"
+          check-version: ${{ steps.tag.outputs.tag }}
+
+      - name: Check the workspace version agrees too
+        run: |
+          set -euo pipefail
+          pip install --quiet patchnotes
+          patchnotes CHANGELOG.md check-version --against Cargo.toml
+
+  # The CLI: a single static binary per platform. No installer, because a tool
+  # you drop on your PATH does not need one.
+  cli:
+    name: CLI (${{ matrix.target }})
+    needs: changelog
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            archive: tar.gz
+            smoke: true
+          # Cross-compiled, so nothing here can run it. The core test suite
+          # already covers behaviour; this job only has to produce a binary.
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            archive: tar.gz
+            smoke: false
+          # macos-13 is the last Intel image. Building x86_64 on an arm64
+          # runner would work, but then the smoke test would need Rosetta.
+          - os: macos-13
+            target: x86_64-apple-darwin
+            archive: tar.gz
+            smoke: true
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+            smoke: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+            smoke: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changelog.outputs.tag }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # musl gives a binary with no libc dependency: a tool that installs file
+      # types should not itself require a runtime.
+      - name: Cross-compilation toolchain
+        if: contains(matrix.target, 'musl')
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross --locked
+
+      - name: Build
+        shell: bash
+        run: |
+          if [[ "${{ matrix.target }}" == *musl* ]]; then
+            cross build --release --locked -p filekind-cli --target ${{ matrix.target }} --features kaitai
+          else
+            cargo build --release --locked -p filekind-cli --target ${{ matrix.target }} --features kaitai
+          fi
+
+      # A release binary that cannot register a file type is worse than no
+      # release. Run the real dogfood spec through it before packaging.
+      - name: Smoke-test the binary it just built
+        if: matrix.smoke
+        shell: bash
+        run: |
+          BIN="target/${{ matrix.target }}/release/filekind"
+          [[ "${{ matrix.target }}" == *windows* ]] && BIN="$BIN.exe"
+          "$BIN" --version
+          "$BIN" check examples/filekind.filekind
+          "$BIN" build examples/londo-save.filekind -o /tmp/smoke
+          test -f /tmp/smoke/windows/register.reg
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.changelog.outputs.tag }}"
+          NAME="filekind-cli-${VERSION}-${{ matrix.target }}"
+          mkdir -p "staging/$NAME"
+
+          EXT=""
+          [[ "${{ matrix.target }}" == *windows* ]] && EXT=".exe"
+          cp "target/${{ matrix.target }}/release/filekind$EXT" "staging/$NAME/"
+          cp README.md CHANGELOG.md LICENSE-MIT LICENSE-APACHE "staging/$NAME/"
+          cp -r examples "staging/$NAME/examples"
+
+          cd staging
+          if [[ "${{ matrix.archive }}" == "zip" ]]; then
+            7z a -tzip "../$NAME.zip" "$NAME" > /dev/null
+            echo "file=$NAME.zip" >> "$GITHUB_OUTPUT"
+          else
+            tar czf "../$NAME.tar.gz" "$NAME"
+            echo "file=$NAME.tar.gz" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: ${{ steps.package.outputs.file }}
+          if-no-files-found: error
+          retention-days: 7
+
+  # The desktop app, bundled per platform. On Windows this is the MSI, and the
+  # CLI rides along inside it as a sidecar so one installer delivers both
+  # interfaces — the design sheet is explicit that shipping one without the
+  # other is not shipping.
+  installers:
+    name: Installer (${{ matrix.os }})
+    needs: changelog
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: msi,nsis
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,rpm,appimage
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bundles: dmg
+          - os: macos-13
+            target: x86_64-apple-darwin
+            bundles: dmg
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changelog.outputs.tag }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+          key: bundle-${{ matrix.target }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Tauri needs webkit2gtk at build *and* runtime on Linux. Pinned to
+      # 22.04 because the AppImage produced on a newer glibc will not run on
+      # an older one.
+      - name: Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev patchelf rpm
+
+      - name: Frontend dependencies
+        working-directory: crates/filekind-gui
+        shell: bash
+        run: |
+          # `npm ci` needs a lock file; fall back so a fresh clone still builds.
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Stage the CLI as a bundled sidecar
+        shell: bash
+        run: ./scripts/stage-cli-sidecar.sh ${{ matrix.target }}
+
+      - name: Build the bundle
+        working-directory: crates/filekind-gui
+        run: npm run tauri build -- --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Collect and rename the bundles
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.changelog.outputs.tag }}"
+          OUT="artifacts"
+          mkdir -p "$OUT"
+          BUNDLE="target/${{ matrix.target }}/release/bundle"
+
+          # Tauri's filenames vary by bundler and platform; normalise them so
+          # the release page reads consistently and SHA256SUMS is legible.
+          shopt -s nullglob globstar
+          for f in "$BUNDLE"/**/*.{msi,exe,deb,rpm,AppImage,dmg}; do
+            base="$(basename "$f")"
+            ext="${base##*.}"
+            case "$ext" in
+              msi)      new="filekind-${VERSION}-x86_64-windows.msi" ;;
+              exe)      new="filekind-${VERSION}-x86_64-windows-setup.exe" ;;
+              deb)      new="filekind-${VERSION}-amd64.deb" ;;
+              rpm)      new="filekind-${VERSION}-x86_64.rpm" ;;
+              AppImage) new="filekind-${VERSION}-x86_64.AppImage" ;;
+              dmg)      new="filekind-${VERSION}-${{ matrix.target }}.dmg" ;;
+              *)        new="$base" ;;
+            esac
+            cp "$f" "$OUT/$new"
+            echo "collected $new"
+          done
+          test -n "$(ls -A "$OUT")" || { echo "::error::no bundles were produced"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.target }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+
+  # One SHA256SUMS file over everything, plus a per-file .sha256 for people who
+  # only want to check the one thing they downloaded.
+  checksums:
+    name: Checksums
+    needs: [changelog, cli, installers]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloaded
+
+      - name: Flatten and hash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          find downloaded -type f -exec cp {} release/ \;
+
+          cd release
+          # Sorted so the file is stable and diffable between releases.
+          sha256sum $(ls | sort) > SHA256SUMS
+          for f in *; do
+            [ "$f" = "SHA256SUMS" ] && continue
+            sha256sum "$f" > "$f.sha256"
+          done
+          echo "### Artifacts" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: release/*
+          if-no-files-found: error
+
+  # Publish. The release body is the changelog section for this tag, lifted out
+  # verbatim — the notes cannot drift from the file because they are the file.
+  publish:
+    name: Publish release
+    needs: [changelog, checksums]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changelog.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: release
+
+      # patchnotes has a `release: "true"` mode that creates the release for
+      # you. We do it by hand instead, for two reasons: the release needs
+      # artifacts attached, and its `latest` renderer emits plain text, whose
+      # indented bullets become a code block in a GitHub release body.
+      # scripts/release-notes.py slices the original markdown out verbatim, so
+      # the notes and the changelog are the same bytes.
+      - name: Compose the release body
+        env:
+          TAG: ${{ needs.changelog.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## filekind $TAG"
+            echo
+            echo "Compile one declarative spec into the registry entries, MIME definitions,"
+            echo "UTI declarations, icons and install scripts that Windows, Linux and macOS"
+            echo "need before they will recognise a custom file extension."
+            echo
+            echo "### What to download"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Windows, both interfaces** | \`filekind-$TAG-x86_64-windows.msi\` — installs the desktop app and puts \`filekind.exe\` on your PATH |"
+            echo "| **Windows, CLI only** | \`filekind-cli-$TAG-x86_64-pc-windows-msvc.zip\` |"
+            echo "| **Linux desktop app** | \`.deb\`, \`.rpm\` or \`.AppImage\` |"
+            echo "| **Linux CLI** | \`filekind-cli-$TAG-*-linux-musl.tar.gz\` — statically linked, no runtime needed |"
+            echo "| **macOS desktop app** | \`.dmg\` (\`aarch64\` for Apple silicon, \`x86_64\` for Intel) |"
+            echo "| **macOS CLI** | \`filekind-cli-$TAG-*-apple-darwin.tar.gz\` |"
+            echo "| **From source** | \`cargo install filekind-cli\` |"
+            echo
+            echo "### Verifying your download"
+            echo
+            echo "Every file has a matching \`.sha256\`, and \`SHA256SUMS\` covers all of them."
+            echo
+            echo '```sh'
+            echo "sha256sum -c SHA256SUMS --ignore-missing"
+            echo '```'
+            echo
+            echo "**These binaries are not codesigned.** Windows SmartScreen will warn on the"
+            echo "MSI and macOS Gatekeeper will refuse the \`.dmg\` until you clear the"
+            echo "quarantine attribute. That is expected, and the checksums above are how you"
+            echo "verify the download in the meantime. See SECURITY.md."
+            echo
+            echo "---"
+            echo
+            python3 scripts/release-notes.py "$TAG"
+            echo
+            echo "---"
+            echo
+            echo "<details><summary>SHA256SUMS</summary>"
+            echo
+            echo '```'
+            cat release/SHA256SUMS
+            echo '```'
+            echo
+            echo "</details>"
+          } > release-body.md
+
+          cat release-body.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.changelog.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Idempotent: re-running workflow_dispatch on the same tag updates
+          # the existing release rather than failing.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file release-body.md --title "filekind $TAG"
+          else
+            gh release create "$TAG" \
+              --title "filekind $TAG" \
+              --notes-file release-body.md \
+              --verify-tag
+          fi
+          gh release upload "$TAG" release/* --clobber

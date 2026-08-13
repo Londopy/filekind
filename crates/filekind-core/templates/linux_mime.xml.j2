@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+{{ banner_plain }}
+-->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="{{ mime | xml }}">
+    <comment>{{ description | xml }}</comment>
+    <glob pattern="*{{ dotted_ext | xml }}"/>
+{%- if has_magic %}
+    <!-- {{ magic_hex }}  ({{ magic_ascii }}) -->
+    <magic priority="50">
+      <match type="string" value="{{ magic_freedesktop | xml }}" offset="0"/>
+    </magic>
+{%- endif %}
+    <icon name="{{ mime_icon_name | xml }}"/>
+    <generic-icon name="{{ generic_icon | xml }}"/>
+  </mime-type>
+</mime-info>

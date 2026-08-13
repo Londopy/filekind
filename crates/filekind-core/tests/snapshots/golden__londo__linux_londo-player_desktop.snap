@@ -1,0 +1,16 @@
+---
+source: crates/filekind-core/tests/golden.rs
+expression: text
+---
+[Desktop Entry]
+Version=1.5
+Type=Application
+Name=Londo Save
+GenericName=Save File
+Comment=Londo project save file
+Exec=londo-player %f
+Icon=application-vnd.london.londo
+Terminal=false
+NoDisplay=false
+MimeType=application/vnd.london.londo;
+Categories=Utility;

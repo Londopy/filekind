@@ -1,0 +1,27 @@
+# A zip-container format, to show what changes: the magic comes from the
+# container rather than the spec, the generic icon becomes an archive, and
+# the libmagic pattern explains why it cannot help you.
+
+[format]
+name        = "Studio Project"
+extension   = "studioproj"
+description = "Studio project bundle"
+container   = "zip"
+version     = "2"
+
+[association]
+mime         = "application/vnd.example.studioproj"
+handler      = "/opt/Studio Suite/bin/studio"
+handler_args = '"%1"'
+
+[targets]
+windows = true
+linux   = true
+macos   = false
+
+[windows]
+perceived_type = "compressed"
+icon_path      = 'C:\Program Files\Studio Suite\icon.ico'
+
+[linux]
+desktop_categories = ["Graphics", "AudioVideo"]

@@ -1,0 +1,71 @@
+<!--
+{{ banner_plain }}
+
+EXPERIMENTAL. Read this before you spend an afternoon wondering why nothing
+happens.
+
+A UTI declaration is only read out of a real .app bundle's Info.plist.
+A loose plist file on disk does nothing at all. Launch Services also ignores
+bundles that are not codesigned and notarised, which needs an Apple Developer
+account. Until then this fragment is useful for exactly one thing: pasting
+into the Info.plist of an app you already ship.
+
+Merge the two arrays below into the <dict> at the top level of your
+Info.plist. If those keys already exist, append to them rather than replacing.
+
+After installing the bundle, force a re-scan:
+
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/\
+LaunchServices.framework/Support/lsregister -f /Applications/{{ app_name }}.app
+-->
+
+<key>UTExportedTypeDeclarations</key>
+<array>
+  <dict>
+    <key>UTTypeIdentifier</key>
+    <string>{{ uti | xml }}</string>
+    <key>UTTypeDescription</key>
+    <string>{{ description | xml }}</string>
+    <key>UTTypeConformsTo</key>
+    <array>
+{%- for c in uti_conforms_to %}
+      <string>{{ c | xml }}</string>
+{%- endfor %}
+    </array>
+{%- if has_icon %}
+    <key>UTTypeIconFile</key>
+    <string>icon.icns</string>
+{%- endif %}
+    <key>UTTypeTagSpecification</key>
+    <dict>
+      <key>public.filename-extension</key>
+      <array>
+        <string>{{ extension | xml }}</string>
+      </array>
+      <key>public.mime-type</key>
+      <array>
+        <string>{{ mime | xml }}</string>
+      </array>
+    </dict>
+  </dict>
+</array>
+
+<key>CFBundleDocumentTypes</key>
+<array>
+  <dict>
+    <key>CFBundleTypeName</key>
+    <string>{{ name | xml }}</string>
+    <key>CFBundleTypeRole</key>
+    <string>{% if has_handler %}Editor{% else %}None{% endif %}</string>
+    <key>LSHandlerRank</key>
+    <string>Owner</string>
+    <key>LSItemContentTypes</key>
+    <array>
+      <string>{{ uti | xml }}</string>
+    </array>
+{%- if has_icon %}
+    <key>CFBundleTypeIconFile</key>
+    <string>icon.icns</string>
+{%- endif %}
+  </dict>
+</array>

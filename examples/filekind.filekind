@@ -1,0 +1,44 @@
+# filekind's own spec format, described in filekind.
+#
+# §11: "If the tool can't make its own file type work, it isn't finished."
+# This file is the acceptance test for v0.1 — build it, install it, and a
+# .filekind file should get a name, an icon and an editor on Windows and
+# Linux.
+#
+#     filekind build examples/filekind.filekind -o dist
+#     cd dist/linux && ./install.sh
+#     xdg-mime query filetype ../../examples/filekind.filekind
+
+[format]
+name        = "filekind spec"
+extension   = "filekind"
+description = "filekind file type definition"
+container   = "text"
+version     = "0.5"
+
+# No magic. A .filekind file is TOML, and TOML has no header — claiming a
+# signature we do not actually write would be a lie that `file` would catch.
+# The glob and the `text` container are what identify it.
+
+[association]
+mime         = "application/vnd.londo.filekind"
+icon         = "assets/icon.png"
+handler_args = '"%1"'
+
+# No handler either: a spec file should open in whatever the user already
+# uses for text. Registering a ProgID with no shell\open\command means
+# Explorer shows the type name and icon, then offers "Open with".
+
+[targets]
+windows = true
+linux   = true
+macos   = false
+
+[windows]
+progid         = "Londo.Filekind.1"
+perceived_type = "text"
+
+[linux]
+desktop_categories = ["Development", "Utility"]
+generic_name       = "File type definition"
+no_display         = true

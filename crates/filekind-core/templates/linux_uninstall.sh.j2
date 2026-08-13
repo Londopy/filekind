@@ -1,0 +1,46 @@
+#!/bin/sh
+{{ banner_hash }}#
+# Reverses install.sh. Every register action has a matching unregister action
+# — that is a hard rule, not a nice-to-have.
+
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$here"
+
+MODE={{ xdg_mode }}
+DATA_DIR="{{ data_dir_expr }}"
+MIME="{{ mime }}"
+ICON_NAME="{{ mime_icon_name }}"
+DESKTOP_FILE="{{ desktop_file }}"
+MIME_FILE="{{ mime_file }}"
+
+{% if is_system -%}
+if [ "$(id -u)" -ne 0 ]; then
+    printf 'filekind: --system uninstall needs root; re-run with sudo\n' >&2
+    exit 1
+fi
+{% endif -%}
+
+if command -v xdg-mime >/dev/null 2>&1 && [ -f "$MIME_FILE" ]; then
+    printf 'Removing MIME type %s\n' "$MIME"
+    xdg-mime uninstall --mode "$MODE" "$MIME_FILE" || true
+fi
+
+if command -v xdg-icon-resource >/dev/null 2>&1; then
+    for size in {% for s in hicolor_sizes %}{{ s }} {% endfor %}; do
+        xdg-icon-resource uninstall --context mimetypes --mode "$MODE" \
+            --size "$size" "$ICON_NAME" 2>/dev/null || true
+    done
+fi
+
+rm -f "$DATA_DIR/applications/$DESKTOP_FILE"
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$DATA_DIR/applications" || true
+fi
+if command -v update-mime-database >/dev/null 2>&1; then
+    update-mime-database "$DATA_DIR/mime" || true
+fi
+
+printf 'Removed %s.\n' "$MIME"

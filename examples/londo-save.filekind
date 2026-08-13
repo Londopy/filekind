@@ -1,0 +1,40 @@
+# The example from the spec sheet, §3 — with the one correction that makes it
+# valid TOML: `magic` uses a literal string.
+
+[format]
+name        = "Londo Save"
+extension   = "londo"
+description = "Londo project save file"
+magic       = 'LNDO\x01'
+container   = "binary"
+version     = "1.0"
+
+[association]
+mime         = "application/vnd.london.londo"
+icon         = "assets/icon.png"
+handler      = "londo-player"
+handler_args = '"%1"'
+
+[targets]
+windows = true
+linux   = true
+macos   = true
+
+[windows]
+progid         = "London.LondoSave.1"
+perceived_type = "document"
+
+[linux]
+desktop_categories = ["Utility"]
+generic_name       = "Save File"
+
+[macos]
+bundle_id       = "wtf.londo.player"
+uti_conforms_to = ["public.data", "public.archive"]
+
+# v0.5: point at a Kaitai schema. filekind stays the association layer —
+# it reads the schema only to check that the two agree about magic bytes,
+# then emits a script you can run to generate parsers.
+[schema]
+kaitai    = "londo.ksy"
+languages = ["rust", "python"]

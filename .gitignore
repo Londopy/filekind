@@ -1,0 +1,82 @@
+# Rust
+/target
+**/target
+Cargo.lock.orig
+
+# Cargo.lock IS committed. filekind ships binaries, and a release built from
+# floating dependency versions is not reproducible.
+
+# filekind output
+# `filekind build` defaults to ./dist, and the examples in the README write
+# there. Generated artifacts are never checked in — regenerate them.
+/dist
+/dist-*
+**/dist/
+SHA256SUMS
+*.sha256
+
+# Node / SvelteKit
+node_modules/
+.svelte-kit/
+crates/filekind-gui/build/
+.vite/
+*.tsbuildinfo
+
+# package-lock.json IS committed, for the same reason as Cargo.lock.
+
+# Tauri
+crates/filekind-gui/src-tauri/gen/
+crates/filekind-gui/src-tauri/target/
+# Signing material must never reach the repository. See SECURITY.md.
+*.p12
+*.pfx
+*.cer
+*.key
+*.keystore
+tauri.conf.local.json
+.tauri/
+
+# Bundles and installers
+*.msi
+*.exe
+*.dmg
+*.pkg
+*.AppImage
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# Deliberately NOT `*.snap`: that is a snapcraft package extension, but it is
+# also insta's snapshot extension, and a blanket rule silently excludes the
+# entire golden-file suite in crates/filekind-core/tests/snapshots/. We do not
+# build snap packages; if that ever changes, scope the rule to the bundle
+# output directory rather than adding it globally.
+
+# Test and snapshot scratch
+*.pending-snap
+*.snap.new
+.insta/
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local environment
+.env
+.env.local
+.direnv/
+result
+result-*
+
+# Staged by scripts/stage-cli-sidecar.sh before a Tauri bundle.
+crates/filekind-gui/src-tauri/binaries/

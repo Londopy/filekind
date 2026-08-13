@@ -1,0 +1,35 @@
+[package]
+name = "filekind-cli"
+description = "Command-line interface to filekind: compile one spec into OS file-type registration artifacts."
+keywords = ["file-association", "mime", "registry", "uti", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+readme = "../../README.md"
+homepage = "https://github.com/Londopy/filekind"
+include = ["src/**/*", "Cargo.toml"]
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "filekind"
+path = "src/main.rs"
+
+[features]
+default = []
+# Lets `filekind build` shell out to kaitai-struct-compiler. Off by default:
+# a tool that emits files should not silently run other people's compilers.
+kaitai = ["filekind-core/kaitai"]
+
+[dependencies]
+filekind-core = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+# The icon test builds its own PNG rather than committing a binary fixture.
+image = { workspace = true }

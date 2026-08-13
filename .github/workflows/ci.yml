@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  core:
+    name: core + cli (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      # `--features kaitai` rather than `--all-features` on purpose: the
+      # `typescript` feature pulls in ts-rs, whose derive emits warnings about
+      # serde attributes it does not understand. Those are noise, not lints,
+      # and this job runs with `-D warnings`. The bindings job below exercises
+      # that feature separately.
+      - name: Clippy
+        run: cargo clippy --workspace --exclude filekind-gui --all-targets --features kaitai
+
+      # Golden files are per-platform only in the sense that the *tests* run
+      # everywhere; the generated artifacts are byte-identical on all three,
+      # which is the property being checked.
+      - name: Test
+        run: cargo test --workspace --exclude filekind-gui --features kaitai
+
+      - name: Dogfood — filekind registers its own file type
+        run: |
+          cargo run -p filekind-cli -- check examples/filekind.filekind
+          cargo run -p filekind-cli -- build examples/filekind.filekind -o dist
+        shell: bash
+
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.77.0
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --exclude filekind-gui
+
+  bindings:
+    name: TypeScript bindings are up to date
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # The TS types are generated from the Rust definitions. If someone
+      # edits a struct without regenerating, this job notices.
+      - run: ./scripts/generate-bindings.sh
+      - run: git diff --exit-code crates/filekind-gui/src/lib/bindings
+
+  gui:
+    name: gui (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Tauri needs webkit2gtk at build *and* runtime on Linux. Forgetting
+      # this is the single most common first-build failure.
+      - name: Linux system dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        working-directory: crates/filekind-gui
+        shell: bash
+        run: |
+          # `npm ci` needs a committed lock file. Fall back until one exists so
+          # a fresh clone is not blocked on it.
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Stage the CLI sidecar the bundler expects
+        shell: bash
+        run: ./scripts/stage-cli-sidecar.sh
+
+      - name: Type-check the frontend
+        working-directory: crates/filekind-gui
+        run: npm run check
+
+      - name: Build the app
+        working-directory: crates/filekind-gui
+        run: npm run tauri build -- --no-bundle

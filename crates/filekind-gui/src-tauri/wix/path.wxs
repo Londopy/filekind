@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Adds the install directory to the user's PATH.
+
+  The MSI ships two binaries: the GUI, which people launch from the Start
+  menu, and `filekind.exe`, which is only useful if a terminal can find it.
+  Without this fragment the CLI is installed and unreachable, which is the
+  worst of both worlds.
+
+  Part="last" appends rather than replaces. Action="set" with Permanent="no"
+  means the entry is removed on uninstall — the same rule the generated
+  artifacts follow: every register action has a matching unregister action.
+
+  System="no" keeps it in HKCU, matching filekind's own default of never
+  asking for privilege it does not need.
+
+  Referenced from tauri.conf.json via bundle.windows.wix.componentRefs.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="FilekindPathEntry"
+                 Guid="8B1F0C3E-5A6D-4E29-9C77-0B4E2D51A6F3"
+                 KeyPath="yes">
+        <Environment Id="FilekindPath"
+                     Name="PATH"
+                     Value="[INSTALLDIR]"
+                     Permanent="no"
+                     Part="last"
+                     Action="set"
+                     System="no" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

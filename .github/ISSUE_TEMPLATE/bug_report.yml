@@ -1,0 +1,99 @@
+name: Bug report
+description: Something filekind generated is wrong, or it refused to generate at all.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The most useful bug report contains a spec
+        file and a generated artifact — with both, this is usually a ten-minute
+        fix instead of a conversation.
+
+        **Security issues do not belong here.** Use private reporting instead:
+        Security → Advisories → Report a vulnerability. See
+        [SECURITY.md](https://github.com/Londopy/filekind/blob/main/SECURITY.md).
+
+  - type: textarea
+    id: spec
+    attributes:
+      label: The spec
+      description: >-
+        The `.filekind` file, or the smallest one that still shows the problem.
+      render: toml
+      placeholder: |
+        [format]
+        name = "Londo Save"
+        extension = "londo"
+        description = "Londo project save file"
+
+        [association]
+        mime = "application/vnd.london.londo"
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: What you ran
+      placeholder: filekind build londo-save.filekind -o dist --system
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: >-
+        Paste the generated artifact if one was produced —
+        `filekind preview -t windows -k reg` prints a single one — or the error
+        if it was not.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: filekind version
+      description: Output of `filekind --version`, or the commit if built from source.
+      placeholder: filekind 0.5.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Which interface
+      options:
+        - CLI
+        - GUI
+        - Both
+        - "Using filekind-core as a library"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: >-
+        Where you *ran* filekind. If the wrong output was for a different
+        platform, say so — cross-generation is normal and worth knowing about.
+      placeholder: Windows 11 24H2 / Fedora 41 / macOS 15.1
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: "`filekind check` on this spec, and I have included any diagnostics it printed"
+        - label: I searched existing issues

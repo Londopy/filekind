@@ -1,0 +1,32 @@
+[package]
+name = "filekind-gui"
+description = "Desktop app for filekind: edit a spec and watch the generated artifacts update as you type."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+# Tauri v2 wants the app in a library so mobile targets can call `run()`.
+name = "filekind_gui_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "filekind-gui"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+filekind-core = { workspace = true }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[features]
+default = []
+kaitai = ["filekind-core/kaitai"]

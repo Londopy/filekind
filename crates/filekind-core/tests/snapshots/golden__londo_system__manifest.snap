@@ -1,0 +1,30 @@
+---
+source: crates/filekind-core/tests/golden.rs
+expression: manifest
+---
+windows    reg            windows/register.reg
+windows    reg-uninstall  windows/unregister.reg
+windows    inno           windows/inno-snippet.iss
+windows    nsis           windows/nsis-snippet.nsh
+windows    icon           windows/icon.ico
+linux      mime-xml       linux/londo-save-mime.xml
+linux      desktop        linux/londo-player.desktop
+linux      script         linux/install.sh  [+x]
+linux      script         linux/uninstall.sh  [+x]
+linux      icon           linux/icons/hicolor/128x128/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/16x16/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/22x22/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/24x24/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/256x256/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/32x32/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/48x48/mimetypes/application-vnd.london.londo.png
+linux      icon           linux/icons/hicolor/64x64/mimetypes/application-vnd.london.londo.png
+linux      deb            linux/packaging/build-deb.sh  [+x]
+linux      deb            linux/packaging/deb/control
+linux      deb            linux/packaging/deb/postinst  [+x]
+linux      deb            linux/packaging/deb/postrm  [+x]
+linux      rpm            linux/packaging/londo-save-mime.spec
+macos      plist          macos/Info.plist.fragment
+macos      icon           macos/icon.icns
+universal  magic          magic.txt
+universal  readme         README.md

@@ -1,0 +1,63 @@
+name: Feature request
+description: A target, a spec field, or a capability filekind does not have yet.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before writing, it is worth checking these — they are design
+        constraints rather than gaps, and they will not change:
+
+        - filekind will not make your type the **default handler on Windows**.
+          Windows 10+ blocks it from a script, and tools that work around the
+          block get flagged as malware.
+        - filekind will not **install** anything. It emits artifacts you run
+          yourself.
+        - A **data file can never declare its own handler**. That is what makes
+          a format a data file rather than a malware delivery vehicle.
+        - filekind will not **define binary formats**. Kaitai Struct already
+          does that; the `[schema]` table is the seam between the two.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: >-
+        The situation, not the solution. "I ship a format that also opens in
+        a viewer, and I need a second verb" is more useful than "add a verbs
+        field" — there may be a better answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: If it touches the spec file, show the TOML you would write.
+      render: toml
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part
+      multiple: true
+      options:
+        - Spec format
+        - Windows target
+        - Linux target
+        - macOS target
+        - Icon pipeline
+        - Validation
+        - CLI
+        - GUI
+        - Packaging (deb/rpm/msi/…)
+        - Kaitai integration
+        - Documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you are doing instead today
+      description: Including "nothing, I gave up" — that is useful signal.

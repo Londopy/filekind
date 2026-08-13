@@ -1,0 +1,45 @@
+#!/bin/sh
+{{ banner_hash }}#
+# Assembles a .deb from the files filekind already generated in ../ .
+# Nothing is duplicated on disk until you run this.
+#
+#     cd linux/packaging && ./build-deb.sh
+#
+# Requires dpkg-deb (Debian/Ubuntu, or the `dpkg` package elsewhere).
+
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+linux_dir=$(CDPATH= cd -- "$here/.." && pwd)
+pkg="{{ slug }}-mime_{{ format_version }}_all"
+root="$here/build/$pkg"
+
+command -v dpkg-deb >/dev/null 2>&1 || {
+    printf 'filekind: dpkg-deb not found\n' >&2
+    exit 1
+}
+
+rm -rf "$here/build"
+mkdir -p "$root/DEBIAN" \
+         "$root/usr/share/mime/packages" \
+         "$root/usr/share/applications"
+
+install -m 644 "$here/deb/control"  "$root/DEBIAN/control"
+install -m 755 "$here/deb/postinst" "$root/DEBIAN/postinst"
+install -m 755 "$here/deb/postrm"   "$root/DEBIAN/postrm"
+
+install -m 644 "$linux_dir/{{ mime_file }}"    "$root/usr/share/mime/packages/{{ mime_file }}"
+install -m 644 "$linux_dir/{{ desktop_file }}" "$root/usr/share/applications/{{ desktop_file }}"
+
+if [ -d "$linux_dir/icons" ]; then
+    for size in {% for s in hicolor_sizes %}{{ s }} {% endfor %}; do
+        src="$linux_dir/icons/hicolor/${size}x${size}/mimetypes/{{ mime_icon_name }}.png"
+        [ -f "$src" ] || continue
+        dest="$root/usr/share/icons/hicolor/${size}x${size}/mimetypes"
+        mkdir -p "$dest"
+        install -m 644 "$src" "$dest/"
+    done
+fi
+
+dpkg-deb --build --root-owner-group "$root"
+printf 'Built %s\n' "$here/build/$pkg.deb"
