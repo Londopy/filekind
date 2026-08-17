@@ -36,7 +36,7 @@ ico = "0.4"
 icns = "0.3"
 base64 = "0.22"
 insta = { version = "1", features = ["filters"] }
-ts-rs = "10"
+ts-rs = "12"
 
 [profile.release]
 strip = true
