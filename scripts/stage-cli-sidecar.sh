@@ -28,17 +28,29 @@ esac
 mkdir -p "$DEST"
 
 # universal-apple-darwin is not a real target triple — it is a lipo of two.
-# Tauri still wants one file named after the alias, so build both and fuse
-# them, exactly as the bundler does for the app binary itself.
+#
+# The bundler does not consume it as one, either. `tauri build --target
+# universal-apple-darwin` builds the app once per architecture and fuses the
+# results at the end, so each of those passes resolves `externalBin` against
+# its *own* triple. Staging only the fused binary fails the aarch64 pass with:
+#
+#     resource path `binaries/filekind-aarch64-apple-darwin` doesn't exist
+#
+# Both real triples therefore have to be present. The fused copy is written
+# too: it costs nothing and is what a Tauri that resolves the alias directly
+# would look for.
 if [ "$TARGET" = "universal-apple-darwin" ]; then
     for arch in x86_64-apple-darwin aarch64-apple-darwin; do
         printf 'Building filekind-cli for %s\n' "$arch"
         cargo build --release --locked -p filekind-cli --target "$arch"
+        cp "target/$arch/release/filekind" "$DEST/filekind-$arch"
+        printf 'Staged %s\n' "$DEST/filekind-$arch"
     done
+
     lipo -create -output "$DEST/filekind-universal-apple-darwin" \
-        target/x86_64-apple-darwin/release/filekind \
-        target/aarch64-apple-darwin/release/filekind
-    printf 'Staged %s (universal)\n' "$DEST/filekind-universal-apple-darwin"
+        "$DEST/filekind-x86_64-apple-darwin" \
+        "$DEST/filekind-aarch64-apple-darwin"
+    printf 'Staged %s (fused)\n' "$DEST/filekind-universal-apple-darwin"
     exit 0
 fi
 
