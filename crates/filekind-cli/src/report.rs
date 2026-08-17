@@ -1,24 +1,24 @@
 //! Terminal output. Kept away from core, which must never print.
 //!
-//! Colour is applied only when stdout is a terminal and `NO_COLOR` is unset,
-//! so piping `filekind check` into a log does not fill it with escape codes.
-
-use std::io::IsTerminal;
-use std::sync::OnceLock;
+//! Everything here goes out through `anstream`, which decides what the
+//! terminal can actually render.
 
 use filekind_core::{Diagnostic, Severity};
 
-fn colour() -> bool {
-    static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("NO_COLOR").is_none() && std::io::stdout().is_terminal())
-}
-
+/// Wrap text in an ANSI sequence, unconditionally.
+///
+/// Deciding here whether to colour is the mistake this used to make: it asked
+/// `stdout().is_terminal()`, which is perfectly true in `cmd.exe` — and
+/// conhost then printed `\x1b[1m` literally, because it does not interpret
+/// escapes until virtual terminal processing is enabled on the handle. The tty
+/// check was necessary and not sufficient, and it only looked correct in
+/// terminals that happen to enable VT for you.
+///
+/// So: always emit, and print through `anstream`, which turns VT on where the
+/// console supports it, strips the codes where it does not, and honours
+/// `NO_COLOR` and `CLICOLOR_FORCE` on the way past.
 fn paint(code: &str, s: &str) -> String {
-    if colour() {
-        format!("\x1b[{code}m{s}\x1b[0m")
-    } else {
-        s.to_string()
-    }
+    format!("\x1b[{code}m{s}\x1b[0m")
 }
 
 pub fn bold(s: &str) -> String {
@@ -43,15 +43,15 @@ pub fn green(s: &str) -> String {
 
 /// Print a top-level failure to stderr, including any nested causes.
 pub fn error(e: &anyhow::Error) {
-    eprintln!("{} {e}", red("error:"));
+    anstream::eprintln!("{} {e}", red("error:"));
     for cause in e.chain().skip(1) {
-        eprintln!("  {} {cause}", dim("caused by:"));
+        anstream::eprintln!("  {} {cause}", dim("caused by:"));
     }
     // A validation failure carries its own diagnostics; surface them rather
     // than making the user re-run `check`.
     if let Some(fk) = e.downcast_ref::<filekind_core::Error>() {
         if !fk.diagnostics().is_empty() {
-            eprintln!();
+            anstream::eprintln!();
             diagnostics(fk.diagnostics());
         }
     }
@@ -78,14 +78,14 @@ pub fn format_diagnostics(diags: &[Diagnostic]) -> String {
 pub fn diagnostics(diags: &[Diagnostic]) {
     use std::io::Write as _;
     let _ = std::io::stdout().flush();
-    eprint!("{}", format_diagnostics(diags));
+    anstream::eprint!("{}", format_diagnostics(diags));
     let _ = std::io::stderr().flush();
 }
 
 /// Print diagnostics to stdout. `check` uses this: for that command the
 /// diagnostics *are* the output, not a side-channel.
 pub fn diagnostics_stdout(diags: &[Diagnostic]) {
-    print!("{}", format_diagnostics(diags));
+    anstream::print!("{}", format_diagnostics(diags));
 }
 
 /// One-line summary of a diagnostic run.

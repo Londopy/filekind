@@ -18,7 +18,7 @@ pub struct Ctx {
 impl Ctx {
     fn say(&self, msg: impl AsRef<str>) {
         if !self.quiet {
-            println!("{}", msg.as_ref());
+            anstream::println!("{}", msg.as_ref());
         }
     }
 }
@@ -145,7 +145,7 @@ fn load_icon(ctx: &Ctx, loaded: &Loaded) -> Result<Option<IconSet>> {
     let set = IconSet::from_png_bytes(&bytes).with_context(|| format!("in {}", path.display()))?;
     for w in &set.warnings {
         if !ctx.quiet {
-            eprintln!("{}: {w}", report::yellow("warning"));
+            anstream::eprintln!("{}: {w}", report::yellow("warning"));
         }
     }
     Ok(Some(set))
@@ -229,9 +229,9 @@ fn default_extension(name: &str) -> String {
 
 fn prompt(label: &str, default: &str) -> Result<String> {
     if default.is_empty() {
-        print!("{label}: ");
+        anstream::print!("{label}: ");
     } else {
-        print!("{label} [{}]: ", report::dim(default));
+        anstream::print!("{label} [{}]: ", report::dim(default));
     }
     std::io::stdout().flush()?;
     let mut line = String::new();
@@ -340,7 +340,7 @@ pub fn build(
     if !loaded.diagnostics.is_empty() {
         report::diagnostics(&loaded.diagnostics);
         if !ctx.quiet {
-            eprintln!();
+            anstream::eprintln!();
         }
     }
 
@@ -576,7 +576,7 @@ pub fn icons(ctx: &Ctx, png: PathBuf, output: PathBuf, name: String) -> Result<(
     let set = IconSet::from_png_bytes(&bytes)?;
 
     for w in &set.warnings {
-        eprintln!("{}: {w}", report::yellow("warning"));
+        anstream::eprintln!("{}: {w}", report::yellow("warning"));
     }
 
     std::fs::create_dir_all(&output)

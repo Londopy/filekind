@@ -26,6 +26,12 @@ kaitai = ["filekind-core/kaitai"]
 [dependencies]
 filekind-core = { workspace = true }
 clap = { workspace = true }
+# Terminal-aware output. Not a nicety: emitting ANSI because stdout is a tty is
+# wrong on Windows, where legacy conhost needs virtual terminal processing
+# enabled on the handle before it renders escapes rather than printing them.
+# anstream enables VT where it can and strips the codes where it cannot.
+# Already in the tree via clap, so this costs nothing.
+anstream = "1"
 anyhow = { workspace = true }
 serde_json = { workspace = true }
 
