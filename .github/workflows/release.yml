@@ -256,8 +256,15 @@ jobs:
 
           # Tauri's filenames vary by bundler and platform; normalise them so
           # the release page reads consistently and SHA256SUMS is legible.
-          shopt -s nullglob globstar
-          for f in "$BUNDLE"/**/*.{msi,exe,deb,rpm,AppImage,dmg}; do
+          #
+          # Deliberately NOT `globstar` and `**`: macOS runners ship bash 3.2,
+          # where `shopt -s globstar` is an error, and under `set -e` that
+          # kills the step. Tauri's layout is exactly one directory deep
+          # (bundle/dmg/x.dmg, bundle/msi/x.msi, …), so a plain two-level glob
+          # does the job and works on every shell here.
+          shopt -s nullglob
+          for f in "$BUNDLE"/*/*; do
+            [ -f "$f" ] || continue
             base="$(basename "$f")"
             ext="${base##*.}"
             case "$ext" in
@@ -267,7 +274,9 @@ jobs:
               rpm)      new="filekind-${VERSION}-x86_64.rpm" ;;
               AppImage) new="filekind-${VERSION}-x86_64.AppImage" ;;
               dmg)      new="filekind-${VERSION}-universal.dmg" ;;
-              *)        new="$base" ;;
+              # Updater archives, .sig files and the .app bundle itself all
+              # land here too. Skip rather than copy them under their own name.
+              *)        continue ;;
             esac
             cp "$f" "$OUT/$new"
             echo "collected $new"
