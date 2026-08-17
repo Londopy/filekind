@@ -33,7 +33,7 @@ anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 ico = "0.4"
-icns = "0.3"
+icns = "0.4"
 base64 = "0.22"
 insta = { version = "1", features = ["filters"] }
 ts-rs = "10"
