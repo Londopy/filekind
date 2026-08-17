@@ -190,9 +190,18 @@ jobs:
             target: universal-apple-darwin
             bundles: dmg
     steps:
+      # Everything below builds the TAG, not the branch you dispatched from.
+      # That is deliberate — a release must be reproducible from what was
+      # tagged — but it has a sharp edge: fixing a script on `main` and
+      # re-running this workflow changes the workflow *definition* and nothing
+      # else. The tag has to move too, or you rebuild the old code with new
+      # instructions.
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.changelog.outputs.tag }}
+
+      - name: Say which commit is actually being built
+        run: git log --oneline -1
 
       # A universal-apple-darwin build is a lipo of two real targets, so both
       # have to be installed; `targets:` does not expand the alias.

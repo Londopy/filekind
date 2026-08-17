@@ -51,6 +51,7 @@ if [ "$TARGET" = "universal-apple-darwin" ]; then
         "$DEST/filekind-x86_64-apple-darwin" \
         "$DEST/filekind-aarch64-apple-darwin"
     printf 'Staged %s (fused)\n' "$DEST/filekind-universal-apple-darwin"
+    ls -l "$DEST"
     exit 0
 fi
 
@@ -62,3 +63,4 @@ SRC="target/$TARGET/release/filekind$EXT"
 
 cp "$SRC" "$DEST/filekind-$TARGET$EXT"
 printf 'Staged %s\n' "$DEST/filekind-$TARGET$EXT"
+ls -l "$DEST"
