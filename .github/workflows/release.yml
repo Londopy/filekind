@@ -30,7 +30,7 @@ jobs:
       version: ${{ steps.patchnotes.outputs.latest-version }}
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -93,7 +93,7 @@ jobs:
             archive: zip
             smoke: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.changelog.outputs.tag }}
 
@@ -196,7 +196,7 @@ jobs:
       # re-running this workflow changes the workflow *definition* and nothing
       # else. The tag has to move too, or you rebuild the old code with new
       # instructions.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.changelog.outputs.tag }}
 
@@ -323,7 +323,7 @@ jobs:
     needs: [changelog, checksums]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.changelog.outputs.tag }}
 
