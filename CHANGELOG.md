@@ -10,6 +10,20 @@ This file is validated in CI by
 build, and on a tag push the latest section below becomes the GitHub Release
 notes verbatim.
 
+## [0.5.1] - 2026-08-17
+
+### Fixed
+
+- The CLI printed raw ANSI escapes in `cmd.exe` instead of colour
+  (`←[1mspec:←[0m ...`). Colour was gated on `stdout().is_terminal()`,
+  which is true in a Windows console — but conhost does not interpret escape
+  sequences until virtual terminal processing is enabled on the handle, which
+  Windows Terminal does for you and the classic console does not. Output now
+  goes through `anstream`, which enables VT where the console supports it and
+  strips the codes where it does not. `NO_COLOR` and `CLICOLOR_FORCE` are
+  honoured as before; piped output and the `--json` and `preview` paths are
+  unchanged and remain byte-exact.
+
 ## [0.5.0] - 2026-08-13
 
 First public release. The v0.1–v0.4 milestones from the design sheet landed
@@ -85,4 +99,5 @@ the user picks the default in Settings. Release binaries are unsigned — see
 - filekind never writes to the registry or the MIME database itself. It emits
   scripts you can read before running them.
 
+[0.5.1]: https://github.com/Londopy/filekind/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Londopy/filekind/releases/tag/v0.5.0

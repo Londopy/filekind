@@ -96,7 +96,16 @@ fn opts() -> GenerateOptions {
 }
 
 /// Snapshot every text artifact of a spec under one name.
+///
+/// The crate version is stamped into every generated banner, so without a
+/// filter a routine version bump rewrites all fifty-odd snapshots and buries
+/// the one real change in the diff. Redact it: these tests are about the
+/// artifacts, and there is a separate assertion that the stamp exists at all.
 fn snapshot_all(name: &str, src: &str, options: GenerateOptions) {
+    let mut settings = insta::Settings::clone_current();
+    settings.add_filter(r"filekind \d+\.\d+\.\d+", "filekind [VERSION]");
+    let _guard = settings.bind_to_scope();
+
     let s = spec(src);
     let artifacts = generate(&s, &options).expect("generation succeeds");
 
@@ -323,4 +332,33 @@ fn artifacts_survive_a_json_round_trip() {
 
     let back: Vec<filekind_core::Artifact> = serde_json::from_str(&json).unwrap();
     assert_eq!(back, artifacts);
+}
+
+#[test]
+fn generated_files_are_stamped_with_the_version() {
+    // The golden files redact the version, so assert it directly: a generated
+    // file found on someone's desktop two years from now should say what
+    // produced it.
+    //
+    // Two artifacts legitimately cannot carry the banner. A `.desktop` entry
+    // is a keyfile whose parsers vary in how well they tolerate leading
+    // comments, and `PkgInfo` is eight fixed bytes with no comment syntax at
+    // all. Naming them here means adding a third silently is a test failure.
+    let artifacts = generate(&spec(LONDO), &opts()).unwrap();
+    let stamp = format!("filekind {}", filekind_core::VERSION);
+
+    let unstamped: Vec<&str> = artifacts
+        .iter()
+        .filter(|a| a.as_text().is_some_and(|t| !t.contains(&stamp)))
+        .map(|a| a.path.as_str())
+        .collect();
+
+    assert_eq!(
+        unstamped,
+        [
+            "linux/londo-player.desktop",
+            "macos/Londo Save.app/Contents/PkgInfo"
+        ],
+        "the set of files without a version stamp changed"
+    );
 }
