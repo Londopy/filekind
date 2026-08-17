@@ -11,4 +11,4 @@ kaitai?: string | null,
 /**
  * Target languages for `kaitai-struct-compiler -t`.
  */
-languages: Array<string>, };
+languages?: Array<string>, };

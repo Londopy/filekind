@@ -25,4 +25,4 @@ icon_path?: string | null,
 /**
  * Extra verbs beyond `open`, e.g. `edit = "notepad.exe \"%1\""`.
  */
-verbs: { [key in string]?: string }, };
+verbs?: { [key in string]: string }, };

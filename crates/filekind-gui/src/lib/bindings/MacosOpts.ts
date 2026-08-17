@@ -3,7 +3,7 @@
 /**
  * `[macos]` overrides.
  */
-export type MacosOpts = { bundle_id?: string | null, uti_conforms_to: Array<string>, 
+export type MacosOpts = { bundle_id?: string | null, uti_conforms_to?: Array<string>, 
 /**
  * Override the exported UTI. Defaults to `<bundle_id>.<extension>`.
  */
